@@ -6,6 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import datetime
 from g4f.client import Client
+import json
 
 
 from models import Base, User, Doctor, Patient, Appointment
@@ -98,6 +99,42 @@ def get_doctors():
     doctor_data = [{'id': doctor.id, 'doctor_name': doctor.doctor_name, 'doctor_speciality': doctor.doctor_speciality, 'doctor_experience': doctor.doctor_experience, 'doctor_rating': doctor.doctor_rating} for doctor in doctors]
     return jsonify(doctor_data)
 
+@app.route('/patient_data', methods=['POST'])
+@jwt_required()
+def patient_data():
+    data = request.get_json()
+    current_user = get_jwt_identity()
+    user = session.query(User).filter_by(username=current_user).first()
+    patient = session.query(Patient).filter_by(patient_username=user.username).first()
+    if not patient:
+        new_patient = Patient(
+            patient_name=data.get('patient_name'),
+            patient_age=data.get('patient_age'),
+            patient_username=user.username,
+            patient_sex=data.get('patient_sex'),
+            patient_gender=data.get('patient_gender'),
+            patient_address=data.get('patient_address'),
+            patient_phone=data.get('patient_phone'),
+            patient_previous_illness=data.get('patient_previous_illness'),
+            patient_previous_surgeries=data.get('patient_previous_surgeries'),
+            patient_allergies=data.get('patient_allergies')
+        )
+        session.add(new_patient)
+        session.commit()
+        return jsonify({'status': 'ok', 'message': 'Patient record created'})
+    else:
+        patient.patient_name = data.get('patient_name', patient.patient_name)
+        patient.patient_age = data.get('patient_age', patient.patient_age)
+        patient.patient_sex = data.get('patient_sex', patient.patient_sex)
+        patient.patient_gender = data.get('patient_gender', patient.patient_gender)
+        patient.patient_address = data.get('patient_address', patient.patient_address)
+        patient.patient_phone = data.get('patient_phone', patient.patient_phone)
+        patient.patient_previous_illness = data.get('patient_previous_illness', patient.patient_previous_illness)
+        patient.patient_previous_surgeries = data.get('patient_previous_surgeries', patient.patient_previous_surgeries)
+        patient.patient_allergies = data.get('patient_allergies', patient.patient_allergies)
+        session.commit()
+        return jsonify({'status': 'ok', 'message': 'Patient record updated'})
+
 def openai_call(prompt):
     client = Client()
     response = client.chat.completions.create(
@@ -105,7 +142,7 @@ def openai_call(prompt):
         messages=[{"role": "user", "content": prompt + "give result in json in order of rank {'1': '', '2': '', '3': ''}. nothing else"}],
         response_format={"type": "json_object"}
     )
-    return response.choices[0].message.content
+    return json.loads(response.choices[0].message.content)
     
 
 @app.route('/suggest_doctors', methods=['POST'])
@@ -117,6 +154,14 @@ def suggest_doctors():
     patient = session.query(Patient).filter_by(patient_username=user.username).first()
     if not patient:
         return jsonify({'status': 'error', 'message': 'Patient not found'})
+    prompt = "Subjet's past details are as follows,"
+    for key, value in patient.__dict__.items():
+        if key not in ['id',"patient_name", "patient_username", "patient_address", "patient_phone"]:
+            prompt += f"Subject's {key} is {value},"
+    prompt = prompt + "Given the patient's past history and current problem, suggest which spectialist to visit from Allergy and Immunology, Anesthesiology, Cardiology, Dermatology, Emergency Medicine, Endocrinology, Family Medicine, Gastroenterology, Geriatrics, Hematology, Infectious Disease, Internal Medicine, Nephrology, Neurology, Obstetrics and Gynecology (OB/GYN), Oncology, Ophthalmology, Orthopedics, Otolaryngology (ENT), Pathology, Pediatrics, Physical Medicine and Rehabilitation (Physiatry), Plastic Surgery, Psychiatry, Pulmonology, Radiology, Rheumatology, Sports Medicine, Surgery, Urology"
+    response = openai_call(prompt)
+
+    return jsonify({'status': 'ok', 'response': response})
     
 
 
