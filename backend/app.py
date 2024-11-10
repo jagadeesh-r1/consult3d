@@ -5,8 +5,13 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import datetime
+from flask_cors import cross_origin
 from g4f.client import Client
 import json
+import ollama
+
+if not "llama3.1" in ollama.list().get("models"):                                     
+    ollama.pull("llama3.1")   
 
 
 from models import Base, User, Doctor, Patient, Appointment
@@ -100,18 +105,32 @@ def get_doctors():
 
     doctors = query.all()
     doctor_data = [{'id': doctor.id, 'doctor_name': doctor.doctor_name, 'doctor_speciality': doctor.doctor_speciality, 'doctor_experience': doctor.doctor_experience, 'doctor_rating': doctor.doctor_rating} for doctor in doctors]
-    return jsonify(doctor_data)
+    return jsonify({'status': 'ok', 'response': doctor_data})
 
 @app.route('/check_patient_data', methods=['GET'])
 @jwt_required()
 def check_patient_data():
-    current_user = get_jwt_identity()
-    user = session.query(User).filter_by(username=current_user).first()
-    patient = session.query(Patient).filter_by(patient_username=user.username).first()
-    if not patient:
-        return jsonify({'status': 'ok', 'message': 'Patient record not found'}), 404
-    else:
-        return jsonify({'status': 'ok', 'message': 'Patient record found'}), 200
+    try:
+        current_user = get_jwt_identity()
+        print(f"Current user: {current_user}")
+        
+        user = session.query(User).filter_by(username=current_user).first()
+        if not user:
+            print("User not found")
+            return jsonify({'status': 'error', 'message': 'User not found'}), 404
+        
+        print(f"User: {user}")
+        
+        patient = session.query(Patient).filter_by(patient_username=user.username).first()
+        if not patient:
+            print("Patient record not found")
+            return jsonify({'status': 'ok', 'message': 'Patient record not found'}), 404
+        else:
+            print("Patient record found")
+            return jsonify({'status': 'ok', 'message': 'Patient record found'}), 200
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'status': 'error', 'message': 'An error occurred'}), 500
 
 @app.route('/patient_data', methods=['POST'])
 @jwt_required()
@@ -172,16 +191,34 @@ def get_patient_data():
     return jsonify(patient_data)
 
 def openai_call(prompt):
-    client = Client()
-    response = client.chat.completions.create(
-        model="o1",
-        messages=[{"role": "user", "content": prompt + "give result in json in order of rank {'1': '', '2': '', '3': ''}. nothing else"}],
-        response_format={"type": "json_object"}
-    )
-    return json.loads(response.choices[0].message.content)
+    # client = Client()
+    # response = client.chat.completions.create(
+    #     model="o1",
+    #     messages=[{"role": "user", "content": prompt + "give result in json in order of rank {'1': '', '2': '', '3': ''}. nothing else"}],
+    #     response_format={"type": "json_object"}
+    # )
+    # return json.loads(response.choices[0].message.content)
+    messages = [{"role": "user", "content": prompt + "give result in json in order of rank {'1': '', '2': '', '3': ''}. nothing else"}]
+    stream = ollama.chat(model="llama3.1", messages=messages, stream=True)
+    bot_response = ""
+    for chunk in stream:
+        content = chunk["message"]["content"]
+        # print(content, end='', flush='')  
+        bot_response += content
+    try:
+        if "```json" in bot_response:
+            bot_response = bot_response.split("```json")[1]
+            bot_response = bot_response.split("```")[0]
+        if "```" in bot_response:
+            bot_response = bot_response.split("```")[1]
+        # print(bot_response)
+    except Exception as e:
+        print(e)
+    return json.loads(bot_response)
     
 
 @app.route('/suggest_doctors', methods=['POST'])
+@cross_origin()
 @jwt_required()
 def suggest_doctors():
     data = request.get_json()
@@ -212,7 +249,8 @@ def book_appointment():
     patient = session.query(Patient).filter_by(patient_username=user.username).first()
     if not patient:
         return jsonify({'status': 'error', 'message': 'Patient not found'})
-    doctor = session.query(Doctor).filter_by(doctor_name=data.get('doctor_name')).first()
+    print(data)
+    doctor = session.query(Doctor).filter_by(doctor_name=data.get('appointment_doctor')).first()
     if not doctor:
         return jsonify({'status': 'error', 'message': 'Doctor not found'})
     new_appointment = Appointment(
@@ -220,13 +258,28 @@ def book_appointment():
         appointment_time=data.get('appointment_time'),
         appointment_doctor=doctor.doctor_name,
         appointment_patient=patient.patient_name,
-        appointment_status='pending',
+        appointment_status='scheduled',
         appointment_reason=data.get('appointment_reason')
     )
     session.add(new_appointment)
     session.commit()
     return jsonify({'status': 'ok', 'message': 'Appointment created'})
     
+
+@app.route('/appointments', methods=['GET'])
+@jwt_required()
+def get_appointments():
+    current_user = get_jwt_identity()
+    user = session.query(User).filter_by(username=current_user).first()
+    print(user)
+    patient = session.query(Patient).filter_by(patient_username=user.username).first()
+    print(patient)
+    if not patient:
+        return jsonify({'status': 'error', 'message': 'Patient not found'})
+    appointments = session.query(Appointment).filter_by(appointment_patient=patient.patient_name).all()
+    appointment_data = [{'id': appointment.id, 'appointment_date': appointment.appointment_date, 'appointment_time': appointment.appointment_time, 'appointment_doctor': appointment.appointment_doctor, 'appointment_status': appointment.appointment_status, 'appointment_reason': appointment.appointment_reason} for appointment in appointments]
+    print(appointment_data)
+    return jsonify({'status': 'ok', 'response': appointment_data})
 
 
 if __name__ == '__main__':

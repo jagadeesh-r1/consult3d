@@ -254,24 +254,29 @@
   }
   
   .doctors-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1rem;
-    margin-top: 1rem;
-  }
-  
-  .doctor-card {
-    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.doctor-card {
+    padding: 15px;
     border: 1px solid #ddd;
-    border-radius: 8px;
+    border-radius: 4px;
+    margin-bottom: 10px;
     cursor: pointer;
-    transition: all 0.3s ease;
-  }
-  
-  .doctor-card.selected {
+    transition: background-color 0.3s ease;
+}
+
+.doctor-card:hover {
+    background-color: #f1f1f1;
+}
+
+.doctor-card.selected {
+    background-color: #87CEEB;
     border-color: #4682B4;
-    background: rgba(70, 130, 180, 0.1);
-  }
+}
+  
+  
   
   .time-slots {
     display: grid;

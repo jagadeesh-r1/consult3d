@@ -7,7 +7,8 @@ import Dashboard from './pages/Dashboard';
 import NewAppointment from './pages/NewAppointment';
 import ProfileCompletion from './pages/ProfileCompletion';
 import ProfilePage from './pages/ProfilePage';
-
+import Appointments from './pages/Appointments';
+import DisplayDoctors from './pages/DisplayDoctors';
 
 const MainContent = () => {
   const navigate = useNavigate();
@@ -51,6 +52,8 @@ const App = () => {
         <Route path="/new-appointment" element={<NewAppointment />} />
         <Route path="/profile" element={<ProfileCompletion />} />
         <Route path="/profile-page" element={<ProfilePage />} />
+        <Route path="/appointments" element={<Appointments />} />
+        <Route path="/doctors" element={<DisplayDoctors />} />
       </Routes>
     </Router>
   );

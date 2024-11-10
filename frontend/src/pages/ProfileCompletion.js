@@ -40,6 +40,7 @@ const ProfileCompletion = () => {
     }
 
     setIsLoading(true);
+    console.log('Form data:', formData);
 
     try {
       const response = await fetch('http://127.0.0.1:5000/patient_data', {
@@ -63,6 +64,24 @@ const ProfileCompletion = () => {
     }
   };
 
+  const checkAndNavigateProfile = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:5000/check_patient_data', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.status === 200) {
+        navigate('/profile-page');
+      } else if (response.status === 404) {
+        navigate('/profile');
+      }
+    } catch (error) {
+      console.error('Error checking patient data:', error);
+    }
+  };
+
   const handleInputChange = (e) => {
     setFormData({
       ...formData,
@@ -70,9 +89,30 @@ const ProfileCompletion = () => {
     });
   };
 
-
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  }
+  
   return (
     <div className="profile-completion-container">
+      <nav className="navbar">
+        <div className="nav-brand">TeleMedi</div>
+        <ul className="nav-links">
+          <li>
+            <button onClick={() => navigate('/dashboard')}>Dashboard</button>
+          </li>
+          <li>
+            <button className="active">Profile</button>
+          </li>
+          <li>
+            <button onClick={() => navigate('/appointments')}>Appointments</button>
+          </li>
+        </ul>
+        <button className="logout-btn" onClick={handleLogout}>
+          Logout
+        </button>
+      </nav>
       <div className="profile-form-wrapper">
         <h2>Complete Your Profile</h2>
         <p className="subtitle">Please provide your medical information to proceed</p>

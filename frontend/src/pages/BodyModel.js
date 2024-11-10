@@ -1,19 +1,8 @@
-// BodyModel.js
 import React, { useState } from 'react';
 import './BodyModel.css';
 
-  const BodyModel = ({ onRegionSelect, selectedRegions = [] }) => {
-    const [view, setView] = useState('male');
-  
-    const handleClick = (region) => {
-      let newSelectedRegions;
-      if (selectedRegions.includes(region)) {
-        newSelectedRegions = selectedRegions.filter(r => r !== region);
-      } else {
-        newSelectedRegions = [...selectedRegions, region];
-      }
-      onRegionSelect(newSelectedRegions);
-    };
+const BodyModel = ({ onRegionSelect, selectedRegions, gender }) => {
+  const [selected, setSelected] = useState(selectedRegions || []);
 
   const female_bodyParts = {
     // Head and neck
@@ -97,51 +86,31 @@ import './BodyModel.css';
     rightFoot: { id: 'rightFoot', element: <rect x="113" y="435" width="30" height="30" /> }
   };
 
+  const bodyParts = gender === 'female' ? female_bodyParts : male_bodyParts;
+  const bodyImage = gender === 'female' ? "https://innerbody.imgix.net/integumentary_system.png" : "https://innerbody.imgix.net/integumentary_system_male_view.png";
+
+  const handleRegionClick = (id) => {
+    const newSelected = selected.includes(id)
+      ? selected.filter(region => region !== id)
+      : [...selected, id];
+    setSelected(newSelected);
+    onRegionSelect(newSelected);
+  };
+
   return (
-    <div className="body-model-container">
-      <div className="gender-toggle">
-        <button 
-          className={view === 'male' ? 'active' : ''}
-          onClick={() => setView('male')}
-        >
-          Male Model
-        </button>
-        <button 
-          className={view === 'female' ? 'active' : ''}
-          onClick={() => setView('female')}
-        >
-          Female Model
-        </button>
-      </div>
-
-      <div className="model-wrapper">
-        <img 
-          src={view === 'female' ? 
-            "https://innerbody.imgix.net/integumentary_system.png" : 
-            "https://innerbody.imgix.net/integumentary_system_male_view.png"
-          } 
-          alt="Body Model" 
-          className="body-image" 
-        />
-        
-        <svg viewBox="0 -25 200 500" className="body-overlay">
-          {Object.values(view === 'female' ? female_bodyParts : male_bodyParts).map(({ id, element }) => (
-            <g 
-              key={id}
-              className={`body-part ${selectedRegions.includes(id) ? 'selected' : ''}`}
-              onClick={() => handleClick(id)}
-            >
-              {element}
-            </g>
-          ))}
-        </svg>
-      </div>
-
-      {selectedRegions.length > 0 && (
-        <div className="selected-info">
-          Selected areas: {selectedRegions.join(', ')}
-        </div>
-      )}
+    <div className="body-model">
+      <img src={bodyImage} alt={`${gender} body`} className="body-image" />
+      <svg className="body-svg" viewBox="0 0 200 500">
+        {Object.values(bodyParts).map(part => (
+          <g
+            key={part.id}
+            className={`body-part ${selected.includes(part.id) ? 'selected' : ''}`}
+            onClick={() => handleRegionClick(part.id)}
+          >
+            {part.element}
+          </g>
+        ))}
+      </svg>
     </div>
   );
 };

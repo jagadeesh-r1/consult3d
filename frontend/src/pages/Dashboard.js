@@ -1,7 +1,8 @@
 import React from 'react';
 import './Dashboard.css';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const checkPatientData = async () => {
   try {
@@ -24,6 +25,40 @@ const Dashboard = () => {
 
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [upcomingAppointments, setUpcomingAppointments] = useState([]);
+  const [pastAppointments, setPastAppointments] = useState([]);
+
+  useEffect(() => {
+      const fetchAppointments = async () => {
+          try {
+              const token = localStorage.getItem('token'); // Adjust based on where you store the token
+              const response = await axios.get('http://127.0.0.1:5000/appointments', {
+                  headers: {
+                      Authorization: `Bearer ${token}`
+                  }
+              });
+              console.log('API response:', response.data); // Log the response data
+  
+              const appointments = response.data.response;
+              // console.log('Appointments:', appointments.response);
+              if (!Array.isArray(appointments)) {
+                  throw new Error('API response is not an array');
+              }
+              console.log('Appointments:', appointments);
+              const now = new Date();
+              const upcoming = appointments.filter(appointment => new Date(appointment.appointment_date) > now);
+              const past = appointments.filter(appointment => new Date(appointment.appointment_date) <= now);
+              console.log('Upcoming appointments:', upcoming);
+              console.log('Past appointments:', past);
+              setUpcomingAppointments(upcoming);
+              setPastAppointments(past);
+          } catch (error) {
+              console.error('Error fetching appointments:', error);
+          }
+      };
+  
+      fetchAppointments();
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -92,14 +127,42 @@ const Dashboard = () => {
         </header>
         
         <div className="dashboard-grid">
-          <div className="dashboard-card">
+        <div className="dashboard-card">
             <h3>Upcoming Appointments</h3>
-            <p>You have no upcoming appointments</p>
-          </div>
-          <div className="dashboard-card">
+            {upcomingAppointments.length > 0 ? (
+                <ul className="appointment-list">
+                    {upcomingAppointments.map(appointment => (
+                        <li key={appointment.id}>
+                            <p className="appointment-date">Date: {appointment.appointment_date}</p>
+                            <p className="appointment-time">Time: {appointment.appointment_time}</p>
+                            <p className="appointment-doctor">Doctor: {appointment.appointment_doctor}</p>
+                            <p className="appointment-reason">Reason: {appointment.appointment_reason}</p>
+                            <p className="appointment-status">Status: {appointment.appointment_status}</p>
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                <p>You have no upcoming appointments</p>
+            )}
+        </div>
+        <div className="dashboard-card">
             <h3>Recent Consultations</h3>
-            <p>No recent consultations</p>
-          </div>
+            {pastAppointments.length > 0 ? (
+              <ul className="appointment-list">
+                        {pastAppointments.map(appointment => (
+                            <li key={appointment.id}>
+                                <p className="appointment-date">Date: {appointment.appointment_date}</p>
+                                <p className="appointment-time">Time: {appointment.appointment_time}</p>
+                                <p className="appointment-doctor">Doctor: {appointment.appointment_doctor}</p>
+                                <p className="appointment-reason">Reason: {appointment.appointment_reason}</p>
+                                <p className="appointment-status">Status: {appointment.appointment_status}</p>
+                            </li>
+                        ))}
+                    </ul>
+            ) : (
+                <p>No recent consultations</p>
+            )}
+        </div>
           <div className="dashboard-card">
             <h3>Quick Actions</h3>
             <button 
@@ -109,8 +172,10 @@ const Dashboard = () => {
             >
               {isLoading ? 'Loading...' : 'Schedule Consultation'}
             </button>
-            <button className="action-btn">Look Up Experts in Specialities</button>
-          </div>
+            <button className="action-btn" onClick={() => navigate('/doctors')}>
+              Look Up Experts in Specialities
+            </button>          
+            </div>
         </div>
       </main>
     </div>

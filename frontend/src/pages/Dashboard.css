@@ -112,3 +112,46 @@
 .action-btn:hover {
   background: #4682B4;
 }
+
+.appointment-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.appointment-list li {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  padding: 15px;
+  transition: background-color 0.3s ease;
+}
+
+.appointment-list li:hover {
+  background-color: #f1f1f1;
+}
+
+.appointment-list p {
+  margin: 5px 0;
+}
+
+.appointment-list .appointment-date {
+  font-weight: bold;
+}
+
+.appointment-list .appointment-time {
+  color: #555;
+}
+
+.appointment-list .appointment-doctor {
+  color: #007bff;
+}
+
+.appointment-list .appointment-reason {
+  color: #888;
+}
+
+.appointment-list .appointment-status {
+  color: #28a745;
+}
