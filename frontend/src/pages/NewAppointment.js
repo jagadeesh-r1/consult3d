@@ -436,7 +436,7 @@ const NewAppointment = () => {
       console.log(data);
       setFormData(prev => ({
         ...prev,
-        recommendedDoctors: data.response
+        availableDoctors: data.response
       }));
       setCurrentStep(6);
     } catch (error) {
