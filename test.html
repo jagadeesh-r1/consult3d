@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Body Model with Detailed Parts</title>
+  <style>
+    /* Style for the container and the image */
+    .container {
+      position: relative;
+      width: 300px;
+      margin: auto;
+    }
+    .body-image {
+      display: block;
+      width: 100%;
+    }
+    /* SVG overlay */
+    svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    /* Styling for clickable body parts */
+    .body-part {
+      fill: rgba(0, 0, 0, 0);
+      cursor: pointer;
+    }
+    .selected {
+      fill: rgba(243, 67, 67, 0.6);
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Select Body Parts</h2>
+  <div class="container">
+    <!-- Background image -->
+    <img src="https://innerbody.imgix.net/integumentary_system.png" alt="Body Model" class="body-image">
+    <!-- SVG overlay with detailed body parts -->
+    <svg id="bodyOverlay" viewBox="0 -25 200 500">
+      <!-- Left Arm with detailed parts -->
+      <rect id="leftShoulder" class="body-part" x="47" y="65" width="20" height="30" />
+      <rect id="leftBicep" class="body-part" x="45" y="95" width="20" height="40" />
+      <rect id="leftElbow" class="body-part" x="45" y="140" width="20" height="15" />
+      <rect id="leftForearm" class="body-part" x="35" y="155" width="20" height="55" transform="rotate(10, 45, 182.5)"/>
+      <rect id="leftWrist" class="body-part" x="32" y="210" width="20" height="20" />
+      <rect id="leftHand" class="body-part" x="25" y="227" width="25" height="30" />
+
+      <!-- Right Arm with detailed parts -->
+      <rect id="rightShoulder" class="body-part" x="135" y="65" width="20" height="30" />
+      <rect id="rightBicep" class="body-part" x="137" y="95" width="20" height="40" />
+      <rect id="rightElbow" class="body-part" x="137" y="140" width="20" height="15" />
+      <rect id="rightForearm" class="body-part" x="140" y="175" width="20" height="55" transform="rotate(-10, 45, 182.5)" />
+      <rect id="rightWrist" class="body-part" x="148" y="210" width="20" height="20" />
+      <rect id="rightHand" class="body-part" x="150" y="227" width="25" height="30" />
+
+      <!-- Head -->
+      <circle id="head" class="body-part" cx="100" cy="15" r="30" />
+      <!-- Neck -->
+        <rect id="neck" class="body-part" x="90" y="45" width="20" height="15" />   
+      <!-- Chest -->
+      <rect id="chest" class="body-part" x="65" y="60" width="70" height="70" />
+      <!-- Stomach -->
+      <rect id="stomach" class="body-part" x="65" y="130" width="70" height="70" />
+      <!-- Lower Abdomen -->
+      <rect id="lowerAbdomen/groin" class="body-part" x="70" y="200" width="60" height="30" />
+      <!-- Left Leg -->
+      <rect id="leftThigh" class="body-part" x="55" y="230" width="40" height="80" />
+      <rect id="leftKnee" class="body-part" x="65" y="310" width="20" height="20" />
+      <rect id="leftShin" class="body-part" x="65" y="330" width="20" height="90" />
+      <rect id="leftAnkle" class="body-part" x="70" y="420" width="20" height="10" />
+      <rect id="leftFoot" class="body-part" x="63" y="435" width="30" height="30" />
+
+      <!-- Right Leg -->
+      <rect id="rightThigh" class="body-part" x="105" y="230" width="40" height="80" />
+      <rect id="rightKnee" class="body-part" x="115" y="310" width="20" height="20" />
+      <rect id="rightShin" class="body-part" x="115" y="330" width="20" height="90" />
+      <rect id="rightAnkle" class="body-part" x="110" y="420" width="20" height="10" />
+      <rect id="rightFoot" class="body-part" x="113" y="435" width="30" height="30" />
+    </svg>
+  </div>
+  <div class="container">
+    <!-- Background image -->
+    <img src="https://innerbody.imgix.net/integumentary_system_male_view.png" alt="Body Model" class="body-image">
+    <!-- SVG overlay with detailed body parts -->
+    <svg id="bodyOverlay" viewBox="0 -25 200 500">
+      <!-- Left Arm with detailed parts -->
+      <rect id="leftShoulder" class="body-part" x="35" y="65" width="30" height="40" />
+      <rect id="leftBicep" class="body-part" x="34" y="105" width="20" height="40" />
+      <rect id="leftElbow" class="body-part" x="32" y="143" width="20" height="15" />
+      <rect id="leftForearm" class="body-part" x="28" y="157" width="20" height="65" transform="rotate(10, 45, 182.5)"/>
+      <rect id="leftWrist" class="body-part" x="23" y="220" width="20" height="20" />
+      <rect id="leftHand" class="body-part" x="16" y="235" width="30" height="40" />
+
+      <!-- Right Arm with detailed parts -->
+      <rect id="rightShoulder" class="body-part" x="135" y="65" width="30" height="40" />
+      <rect id="rightBicep" class="body-part" x="147" y="105" width="20" height="40" />
+      <rect id="rightElbow" class="body-part" x="147" y="143" width="20" height="15" />
+      <rect id="rightForearm" class="body-part" x="152" y="177" width="20" height="65" transform="rotate(-8, 45, 182.5)" />
+      <rect id="rightWrist" class="body-part" x="157" y="220" width="20" height="20" />
+      <rect id="rightHand" class="body-part" x="157" y="235" width="30" height="40" />
+
+      <!-- Head -->
+      <circle id="head" class="body-part" cx="100" cy="15" r="30" />
+      <!-- Neck -->
+        <rect id="neck" class="body-part" x="85" y="45" width="30" height="15" />   
+      <!-- Chest -->
+      <rect id="chest" class="body-part" x="65" y="60" width="70" height="70" />
+      <!-- Stomach -->
+      <rect id="stomach" class="body-part" x="65" y="130" width="70" height="70" />
+      <!-- Lower Abdomen -->
+      <rect id="lowerAbdomen/groin" class="body-part" x="70" y="200" width="60" height="30" />
+      <!-- Left Leg -->
+      <rect id="leftThigh" class="body-part" x="55" y="230" width="40" height="80" />
+      <rect id="leftKnee" class="body-part" x="65" y="310" width="20" height="20" />
+      <rect id="leftShin" class="body-part" x="65" y="330" width="20" height="90" />
+      <rect id="leftAnkle" class="body-part" x="70" y="420" width="20" height="10" />
+      <rect id="leftFoot" class="body-part" x="63" y="435" width="30" height="30" />
+
+      <!-- Right Leg -->
+      <rect id="rightThigh" class="body-part" x="105" y="230" width="40" height="80" />
+      <rect id="rightKnee" class="body-part" x="115" y="310" width="20" height="20" />
+      <rect id="rightShin" class="body-part" x="115" y="330" width="20" height="90" />
+      <rect id="rightAnkle" class="body-part" x="110" y="420" width="20" height="10" />
+      <rect id="rightFoot" class="body-part" x="113" y="435" width="30" height="30" />
+    </svg>
+  </div>
+  <div>
+    <h3>Selected Parts:</h3>
+    <ul id="selectedParts"></ul>
+  </div>
+
+  <script>
+    const selectedPartsList = document.getElementById("selectedParts");
+
+    // Add click event listeners to all body parts
+    document.querySelectorAll('.body-part').forEach(part => {
+      part.addEventListener('click', () => {
+        // Toggle the selected class
+        part.classList.toggle('selected');
+
+        // Update the selected parts list
+        updateSelectedParts();
+      });
+    });
+
+    function updateSelectedParts() {
+      selectedPartsList.innerHTML = '';
+      document.querySelectorAll('.body-part.selected').forEach(part => {
+        const listItem = document.createElement('li');
+        listItem.textContent = part.id;
+        selectedPartsList.appendChild(listItem);
+      });
+    }
+  </script>
+</body>
+</html>

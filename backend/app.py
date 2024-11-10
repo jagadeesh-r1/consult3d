@@ -13,7 +13,7 @@ from models import Base, User, Doctor, Patient, Appointment
 
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=['http://localhost:3000'])
 
 # Database setup
 engine = create_engine('sqlite:///db.sqlite3')
@@ -22,7 +22,7 @@ DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(minutes=15)
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(minutes=60)
 jwt = JWTManager(app)
 
 @app.route('/health-check', methods=['GET'])
@@ -46,7 +46,7 @@ def health_check():
 @app.route('/signup', methods=['POST'])
 def signup():
     data = request.get_json()
-    username = data.get('username')
+    username = data.get('email')
     password = data.get('password')
     user = session.query(User).filter_by(username=username).first()
     if user:
@@ -60,7 +60,7 @@ def signup():
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
-    username = data.get('username')
+    username = data.get('email')
     password = data.get('password')
     user = session.query(User).filter_by(username=username).first()
     if not user or not check_password_hash(user.password, password):
@@ -85,6 +85,7 @@ def get_doctors():
     speciality = request.args.get('speciality')
     rating = request.args.get('rating')
     experience = request.args.get('experience')
+    limit = request.args.get('limit')
 
     query = session.query(Doctor)
 
@@ -94,10 +95,23 @@ def get_doctors():
         query = query.filter(Doctor.doctor_rating >= rating)
     if experience:
         query = query.filter(Doctor.doctor_experience >= experience)
+    if speciality:
+        query = query.order_by(Doctor.doctor_rating.desc()).limit(limit)
 
     doctors = query.all()
     doctor_data = [{'id': doctor.id, 'doctor_name': doctor.doctor_name, 'doctor_speciality': doctor.doctor_speciality, 'doctor_experience': doctor.doctor_experience, 'doctor_rating': doctor.doctor_rating} for doctor in doctors]
     return jsonify(doctor_data)
+
+@app.route('/check_patient_data', methods=['GET'])
+@jwt_required()
+def check_patient_data():
+    current_user = get_jwt_identity()
+    user = session.query(User).filter_by(username=current_user).first()
+    patient = session.query(Patient).filter_by(patient_username=user.username).first()
+    if not patient:
+        return jsonify({'status': 'ok', 'message': 'Patient record not found'}), 404
+    else:
+        return jsonify({'status': 'ok', 'message': 'Patient record found'}), 200
 
 @app.route('/patient_data', methods=['POST'])
 @jwt_required()
@@ -121,7 +135,7 @@ def patient_data():
         )
         session.add(new_patient)
         session.commit()
-        return jsonify({'status': 'ok', 'message': 'Patient record created'})
+        return jsonify({'status': 'ok', 'message': 'Patient record created'}), 201
     else:
         patient.patient_name = data.get('patient_name', patient.patient_name)
         patient.patient_age = data.get('patient_age', patient.patient_age)
@@ -133,12 +147,34 @@ def patient_data():
         patient.patient_previous_surgeries = data.get('patient_previous_surgeries', patient.patient_previous_surgeries)
         patient.patient_allergies = data.get('patient_allergies', patient.patient_allergies)
         session.commit()
-        return jsonify({'status': 'ok', 'message': 'Patient record updated'})
+        return jsonify({'status': 'ok', 'message': 'Patient record updated'}), 200
+    
+
+@app.route('/patient_data', methods=['GET'])
+@jwt_required()
+def get_patient_data():
+    current_user = get_jwt_identity()
+    user = session.query(User).filter_by(username=current_user).first()
+    patient = session.query(Patient).filter_by(patient_username=user.username).first()
+    if not patient:
+        return jsonify({'status': 'error', 'message': 'Patient not found'})
+    patient_data = {
+        'patient_name': patient.patient_name,
+        'patient_age': patient.patient_age,
+        'patient_sex': patient.patient_sex,
+        'patient_gender': patient.patient_gender,
+        'patient_address': patient.patient_address,
+        'patient_phone': patient.patient_phone,
+        'patient_previous_illness': patient.patient_previous_illness,
+        'patient_previous_surgeries': patient.patient_previous_surgeries,
+        'patient_allergies': patient.patient_allergies
+    }
+    return jsonify(patient_data)
 
 def openai_call(prompt):
     client = Client()
     response = client.chat.completions.create(
-        model="o1-mini",
+        model="o1",
         messages=[{"role": "user", "content": prompt + "give result in json in order of rank {'1': '', '2': '', '3': ''}. nothing else"}],
         response_format={"type": "json_object"}
     )
@@ -158,10 +194,38 @@ def suggest_doctors():
     for key, value in patient.__dict__.items():
         if key not in ['id',"patient_name", "patient_username", "patient_address", "patient_phone"]:
             prompt += f"Subject's {key} is {value},"
+    prompt = prompt + ". Now for new appointment, these are the details given by user,"
+    for key, value in data.items():
+        prompt += f"Subject's {key} is {value},"
     prompt = prompt + "Given the patient's past history and current problem, suggest which spectialist to visit from Allergy and Immunology, Anesthesiology, Cardiology, Dermatology, Emergency Medicine, Endocrinology, Family Medicine, Gastroenterology, Geriatrics, Hematology, Infectious Disease, Internal Medicine, Nephrology, Neurology, Obstetrics and Gynecology (OB/GYN), Oncology, Ophthalmology, Orthopedics, Otolaryngology (ENT), Pathology, Pediatrics, Physical Medicine and Rehabilitation (Physiatry), Plastic Surgery, Psychiatry, Pulmonology, Radiology, Rheumatology, Sports Medicine, Surgery, Urology"
     response = openai_call(prompt)
 
     return jsonify({'status': 'ok', 'response': response})
+
+
+@app.route('/book_appointment', methods=['POST'])
+@jwt_required()
+def book_appointment():
+    data = request.get_json()
+    current_user = get_jwt_identity()
+    user = session.query(User).filter_by(username=current_user).first()
+    patient = session.query(Patient).filter_by(patient_username=user.username).first()
+    if not patient:
+        return jsonify({'status': 'error', 'message': 'Patient not found'})
+    doctor = session.query(Doctor).filter_by(doctor_name=data.get('doctor_name')).first()
+    if not doctor:
+        return jsonify({'status': 'error', 'message': 'Doctor not found'})
+    new_appointment = Appointment(
+        appointment_date=data.get('appointment_date'),
+        appointment_time=data.get('appointment_time'),
+        appointment_doctor=doctor.doctor_name,
+        appointment_patient=patient.patient_name,
+        appointment_status='pending',
+        appointment_reason=data.get('appointment_reason')
+    )
+    session.add(new_appointment)
+    session.commit()
+    return jsonify({'status': 'ok', 'message': 'Appointment created'})
     
 
 
