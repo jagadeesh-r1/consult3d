@@ -318,14 +318,17 @@ const NewAppointment = () => {
               {formData.recommendedDoctors ? (
                 <div className="specialties-list">
                   {Object.entries(formData.recommendedDoctors)
-                    .filter(([_, specialty]) => specialty !== "")
+                    .filter(([_, specialty]) => {
+                      console.log(specialty); // Log the specialty object to see its properties
+                      return specialty !== "";
+                    })
                     .map(([id, specialty]) => (
                       <button
                         key={id}
                         className={`specialty-btn ${formData.selectedSpecialty === specialty ? 'selected' : ''}`}
                         onClick={() => handleSpecialtySelect(specialty)}
                       >
-                        {specialty.specialist} {/* Ensure you are rendering a primitive value */}
+                        {specialty || 'Unknown Specialist'} {/* Ensure you are rendering a primitive value */}
                       </button>
                     ))}
                 </div>
@@ -415,7 +418,7 @@ const NewAppointment = () => {
       availableDoctors: null,
       selectedDoctor: null
     }));
-
+  
     try {
       const response = await fetch(`http://127.0.0.1:5000/doctors?speciality=${specialty}&limit=10`, {
         method: 'GET',
@@ -424,16 +427,16 @@ const NewAppointment = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
       });
-
+  
       if (!response.ok) {
         throw new Error('Failed to fetch doctors');
       }
-
+  
       const data = await response.json();
       console.log(data);
       setFormData(prev => ({
         ...prev,
-        availableDoctors: data.response
+        recommendedDoctors: data.response
       }));
       setCurrentStep(6);
     } catch (error) {
@@ -517,7 +520,7 @@ const NewAppointment = () => {
       console.error('Error checking patient data:', error);
     }
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (showEmergencyAlert) return;
